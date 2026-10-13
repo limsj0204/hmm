@@ -16,10 +16,8 @@
   const MEMO_Q = 9; // '?' 메모
   const BOSS_LEVEL = 6;
   // 밸런스 값 (시뮬레이터가 바꿔 가며 실험한다)
-  const TUNING = { expRatio: 1.1, bossRatio: 0.9 };
-  const START_HP = 10;
-  const POTION_HEAL = 5;
-  const REST_HEAL = 3;
+  // ratio는 층마다 FLOORS에 따로 둔다. bossRatio 1이면 보스를 피해 없이 잡으려면 일반 마물을 전부 잡아야 한다.
+  const TUNING = { expRatio: 1.2, bossRatio: 1.0, startHp: 10, potionHeal: 4, restHeal: 2, levelHeal: 0, campMaxHp: 2 };
 
   const MONSTERS = [
     null,
@@ -32,15 +30,16 @@
   ];
 
   const FLOORS = [
-    { name: '슬라임 소굴', cols: 8, rows: 10, counts: [6, 3, 2], chests: 2 },
-    { name: '박쥐 동굴', cols: 9, rows: 11, counts: [6, 4, 3, 2], chests: 2 },
-    { name: '해골 납골당', cols: 9, rows: 12, counts: [6, 4, 4, 2, 2], chests: 3 },
-    { name: '망령의 수로', cols: 10, rows: 13, counts: [7, 5, 5, 3, 3], chests: 3 },
-    { name: '리치의 옥좌', cols: 10, rows: 14, counts: [7, 6, 5, 4, 4], chests: 3, boss: true },
+    // 약한 마물은 드물고 강한 마물이 많다. 그래서 LV1일 때 '1'이 귀하고, 레벨을 올리려면 싸움을 골라야 한다.
+    { name: '슬라임 소굴', cols: 9, rows: 12, counts: [7, 7, 6], chests: 2, ratio: 1.2 },
+    { name: '박쥐 동굴', cols: 10, rows: 14, counts: [7, 8, 8, 7], chests: 3, ratio: 1.15 },
+    { name: '해골 납골당', cols: 11, rows: 16, counts: [8, 9, 9, 8, 7], chests: 3, ratio: 1.1 },
+    { name: '망령의 수로', cols: 12, rows: 18, counts: [8, 10, 10, 11, 11], chests: 4, ratio: 1.2 },
+    { name: '리치의 옥좌', cols: 12, rows: 20, counts: [9, 10, 11, 12, 13], chests: 4, ratio: 1.35, boss: true },
   ];
 
   const ITEMS = {
-    potion: { name: '회복 물약', short: '물약', desc: '체력을 5 회복해요.', target: false },
+    potion: { name: '회복 물약', short: '물약', desc: '체력을 4 회복해요.', target: false },
     crystal: { name: '수정구슬', short: '수정구슬', desc: '숨은 칸 하나의 정체를 안전하게 확인해요.', target: true },
     torch: { name: '횃불', short: '횃불', desc: '가장 약한 마물 3마리의 위치를 비춰요.', target: false },
     bomb: { name: '폭탄', short: '폭탄', desc: '3×3 범위의 마물을 레벨과 상관없이 처치해요. 보스는 버텨요.', target: true },
@@ -49,11 +48,11 @@
   const SHIELD = { name: '방패', desc: '다음 피해 한 번을 막아요.' };
 
   const SHOP = [
-    { key: 'potion', price: 14 },
-    { key: 'crystal', price: 16 },
-    { key: 'torch', price: 18 },
-    { key: 'shield', price: 20 },
-    { key: 'bomb', price: 30 },
+    { key: 'potion', price: 18 },
+    { key: 'crystal', price: 20 },
+    { key: 'torch', price: 22 },
+    { key: 'shield', price: 26 },
+    { key: 'bomb', price: 36 },
   ];
 
   const RELICS = {
@@ -136,8 +135,8 @@
       seed,
       rng: seed | 0,
       fi: 0,
-      hp: START_HP,
-      maxHp: START_HP,
+      hp: TUNING.startHp,
+      maxHp: TUNING.startHp,
       gold: 0,
       shields: 0,
       items: { potion: 1, crystal: 1, torch: 0, bomb: 0 },
@@ -161,7 +160,7 @@
     let s = 0;
     for (let k = 1; k < cap; k++) {
       s += def.counts[k - 1] * k;
-      let t = Math.ceil(s * TUNING.expRatio);
+      let t = Math.ceil(s * (def.ratio || TUNING.expRatio));
       if (def.boss && k === cap - 1) t = Math.ceil(total * TUNING.bossRatio);
       t = Math.min(t, total);
       if (out.length && t <= out[out.length - 1]) t = out[out.length - 1] + 1;
@@ -294,7 +293,7 @@
     }
     while (floor.level < floor.cap && floor.exp >= floor.thresholds[floor.level - 1]) {
       floor.level++;
-      const heal = run.hp < run.maxHp ? 1 : 0;
+      const heal = Math.min(TUNING.levelHeal, run.maxHp - run.hp);
       run.hp += heal;
       ev.push({ t: 'levelup', level: floor.level, heal });
     }
@@ -545,7 +544,7 @@
       if (run.dead) return fail(ev, 'busy');
       if (run.hp >= run.maxHp) return fail(ev, 'full');
       run.items.potion--;
-      const h = Math.min(POTION_HEAL, run.maxHp - run.hp);
+      const h = Math.min(TUNING.potionHeal, run.maxHp - run.hp);
       run.hp += h;
       ev.push({ t: 'heal', amount: h, from: 'potion' });
       return ev;
@@ -621,13 +620,16 @@
 
   function campArrive(run, floor) {
     if (floor.camped) return floor.camped;
-    const want = REST_HEAL + (hasRelic(run, 'candle') ? 4 : 0);
+    run.maxHp += TUNING.campMaxHp;
+    run.hp += TUNING.campMaxHp;
+    const want = TUNING.restHeal + (hasRelic(run, 'candle') ? 4 : 0);
     const heal = Math.min(want, run.maxHp - run.hp);
     run.hp += heal;
     const perfect = floor.dmg === 0;
     const bonus = gainGold(run, 10 + 5 * floor.fi + (perfect ? 15 : 0));
     floor.camped = {
       heal,
+      grow: TUNING.campMaxHp,
       bonus,
       perfect,
       kills: floor.kills,
@@ -693,7 +695,9 @@
     SHOP,
     RELICS,
     RELIC_KEYS,
-    POTION_HEAL,
+    get POTION_HEAL() {
+      return TUNING.potionHeal;
+    },
     newRun,
     startFloor,
     nextFloor,

@@ -147,11 +147,14 @@ function serve() {
       await wait(200);
       continue;
     }
-    // 위험한 싸움 전에 물약
-    if (mv.kind === 'fight' && mv.dmg >= state.hp && state.potions > 0) {
-      await page.click('[data-item="potion"]');
-      await wait(250);
-      continue;
+    // 위험한 싸움 전에 물약. 물약도 없으면 체력을 채운다 (규칙이 아니라 화면 흐름을 보는 테스트라서)
+    if (mv.kind === 'fight' && mv.dmg >= state.hp) {
+      if (state.potions > 0) {
+        await page.click('[data-item="potion"]');
+        await wait(250);
+        continue;
+      }
+      await page.evaluate(() => (window.__mineDungeon.run.hp = window.__mineDungeon.run.maxHp));
     }
     if (!memoShot && mv.kind === 'free' && state.fi === 0) {
       // 메모 기능 한 번: 길게 눌러 메모 창 띄우기

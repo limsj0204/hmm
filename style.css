@@ -491,6 +491,7 @@ button { font: inherit; color: inherit; }
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .toast.warn { box-shadow: inset 0 0 0 1px var(--blood), 0 8px 24px rgba(0, 0, 0, 0.5); }
+.toast.tip.on { pointer-events: auto; cursor: pointer; }
 .toast.tip { box-shadow: inset 0 0 0 1px var(--torch), 0 8px 24px rgba(0, 0, 0, 0.5); }
 
 .target-bar {

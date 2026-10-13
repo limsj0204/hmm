@@ -190,7 +190,8 @@ test('야영지: 휴식, 보상, 유물, 상점', () => {
   run.hp = 4;
   floor.cleared = true;
   const info = C.campArrive(run, floor);
-  assert.strictEqual(run.hp, 7);
+  assert.strictEqual(run.maxHp, 12);
+  assert.strictEqual(run.hp, 8);
   assert.strictEqual(info.perfect, true);
   assert.strictEqual(run.gold, 25);
   assert.strictEqual(C.campArrive(run, floor), info, '두 번 들어와도 보상은 한 번');

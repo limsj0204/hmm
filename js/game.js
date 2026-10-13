@@ -1175,6 +1175,10 @@
     setArmed(null);
     act(C.useItem(run, floor, key));
   });
+  // 팁은 눌러서 바로 닫을 수 있다 (경고 문구는 아래 칸을 다시 눌러야 하니 터치를 통과시킨다)
+  dom.toast.addEventListener('click', () => {
+    if (dom.toast.classList.contains('tip')) hideToast();
+  });
   dom.targetCancel.addEventListener('click', () => {
     setArmed(null);
     Sfx.ui();
@@ -1474,6 +1478,7 @@
       <div class="camp-sum">
         <span>처치<b>${info.kills}</b></span>
         <span>받은 피해<b>${info.dmg}</b></span>
+        ${info.grow ? `<span>단련<b>최대 체력 +${info.grow}</b></span>` : ''}
         <span>휴식<b>${info.heal ? `+${info.heal} HP` : '체력 가득'}</b></span>
         <span>정복 보상<b>+${info.bonus}G</b>${info.perfect ? '<em>무피해 보너스</em>' : ''}</span>
       </div>
@@ -1591,7 +1596,7 @@
     const def = C.FLOORS[floor.fi];
     if (!floor.cleared) {
       banner(`B${floor.fi + 1}`, def.name, 'floor');
-      if (def.boss && !floor.generated) later(1500, () => toast('심연의 리치가 옥좌에서 기다려요. LV6이 되면 피해 없이 쓰러뜨릴 수 있어요.', 'tip', 4800));
+      if (def.boss && !floor.generated) later(1500, () => toast('LV6이 되면 리치를 피해 없이 쓰러뜨릴 수 있어요.', 'tip', 4800));
     }
     if (events && events.length) play(events);
     saveNow();

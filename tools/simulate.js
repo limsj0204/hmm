@@ -22,8 +22,10 @@ const NODE_LIMIT = 60000;
 // 실험용: TUNE='{"expRatio":1,"counts":[[6,3,2],...]}' node tools/simulate.js
 if (process.env.TUNE) {
   const t = JSON.parse(process.env.TUNE);
-  if (t.expRatio) C.TUNING.expRatio = t.expRatio;
-  if (t.bossRatio) C.TUNING.bossRatio = t.bossRatio;
+  for (const k of Object.keys(C.TUNING)) if (t[k] != null) C.TUNING[k] = t[k];
+  if (t.ratios) t.ratios.forEach((r, i) => r != null && (C.FLOORS[i].ratio = r));
+  if (t.chests) t.chests.forEach((n, i) => n != null && (C.FLOORS[i].chests = n));
+  if (t.prices) for (const s of C.SHOP) if (t.prices[s.key] != null) s.price = t.prices[s.key];
   if (t.counts) t.counts.forEach((c, i) => c && (C.FLOORS[i].counts = c));
   if (t.sizes) t.sizes.forEach((sz, i) => sz && ((C.FLOORS[i].cols = sz[0]), (C.FLOORS[i].rows = sz[1])));
 }
