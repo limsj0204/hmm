@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>지뢰 던전</title>
+<meta name="description" content="숫자가 주변 마물들의 레벨 합을 알려 주는 로그라이크 지뢰찾기. 약한 마물부터 사냥해 강해지고, 다섯 층 아래의 리치를 쓰러뜨리세요.">
+<meta name="theme-color" content="#130e19">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <section id="title" class="screen title">
+    <div class="embers" id="embers" aria-hidden="true"></div>
+    <div class="title-bar">
+      <button type="button" class="pill" id="t-sound" aria-pressed="true">효과음 켜짐</button>
+    </div>
+    <div class="title-main">
+      <div class="logo">
+        <p class="logo-en">MINE DUNGEON</p>
+        <h1 class="logo-ko">지뢰 던전</h1>
+      </div>
+      <p class="tagline">숫자는 주변에 숨은 마물들의 <em>레벨 합</em>이에요.<br>약한 마물부터 사냥해 강해지고, 다섯 층 아래의 리치를 쓰러뜨리세요.</p>
+      <ol class="roster" id="roster" aria-label="던전의 마물들"></ol>
+      <div class="title-actions">
+        <button type="button" class="btn" id="t-continue" hidden>이어하기 <small id="t-continue-info"></small></button>
+        <button type="button" class="btn primary" id="t-new">새 모험 시작</button>
+        <button type="button" class="btn ghost" id="t-help">플레이 방법</button>
+      </div>
+      <p class="best" id="t-best"></p>
+    </div>
+  </section>
+
+  <section id="game" class="screen game" hidden>
+    <header class="hud">
+      <div class="hud-top">
+        <span class="floor-tag" id="h-floor">B1</span>
+        <span class="floor-name" id="h-floor-name"></span>
+        <button type="button" class="relic-strip" id="h-relics" aria-label="가진 유물 보기"></button>
+        <span class="gold" aria-label="골드"><span class="sp spr-coin"></span><b id="h-gold">0</b></span>
+        <button type="button" class="icon-btn" id="h-menu" aria-label="메뉴"><span class="burger"></span></button>
+      </div>
+      <div class="meters">
+        <div class="meter hp" id="h-hp">
+          <span class="sp spr-heart"></span>
+          <div class="bar"><i></i></div>
+          <b id="h-hp-text">10/10</b>
+          <span class="shield-badge" id="h-shield" hidden><span class="sp spr-shield"></span><b id="h-shield-n">0</b></span>
+        </div>
+        <div class="meter xp" id="h-xp">
+          <span class="lv">LV<b id="h-lv">1</b></span>
+          <div class="bar"><i></i></div>
+          <b id="h-xp-text">0/7</b>
+        </div>
+      </div>
+      <div class="chips" id="h-chips" aria-label="남은 마물"></div>
+    </header>
+
+    <div class="board-wrap" id="board-wrap">
+      <div class="board" id="board" tabindex="0" aria-label="던전 바닥. 방향키로 이동하고 스페이스로 열어요."></div>
+      <div class="fx" id="fx" aria-hidden="true"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <footer class="belt" id="belt">
+      <div class="target-bar" id="target-bar" hidden>
+        <span class="sp" id="target-icon"></span>
+        <p id="target-text"></p>
+        <button type="button" class="pill" id="target-cancel">취소</button>
+      </div>
+      <div class="items" id="items">
+        <button type="button" class="item" data-item="potion" title="회복 물약: 체력을 5 회복해요."><span class="sp spr-potion"></span><b class="cnt">0</b><small>물약</small></button>
+        <button type="button" class="item" data-item="crystal" title="수정구슬: 숨은 칸 하나의 정체를 안전하게 확인해요."><span class="sp spr-crystal"></span><b class="cnt">0</b><small>수정구슬</small></button>
+        <button type="button" class="item" data-item="torch" title="횃불: 가장 약한 마물 3마리의 위치를 비춰요."><span class="sp spr-torch"></span><b class="cnt">0</b><small>횃불</small></button>
+        <button type="button" class="item" data-item="bomb" title="폭탄: 3×3 범위의 마물을 레벨과 상관없이 처치해요."><span class="sp spr-bomb"></span><b class="cnt">0</b><small>폭탄</small></button>
+      </div>
+      <div class="mode" role="group" aria-label="누르면 할 일">
+        <button type="button" id="m-dig" aria-pressed="true" title="파기 (M)"><span class="sp spr-pickaxe"></span><small>파기</small></button>
+        <button type="button" id="m-memo" aria-pressed="false" title="메모 (M)"><span class="sp spr-flag"></span><small>메모</small></button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div class="picker" id="picker" role="dialog" aria-label="예상 레벨 메모" hidden></div>
+<div class="sheet" id="sheet" hidden><div class="panel" id="sheet-panel" role="dialog" aria-modal="true"></div></div>
+<div class="screen-flash" id="flash" aria-hidden="true"></div>
+<canvas id="particles" aria-hidden="true"></canvas>
+
+<script src="js/core.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
